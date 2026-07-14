@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Activity Logs — RoomSync{% endblock %}
+{% block page_title %}Activity Logs{% endblock %}
+{% block content %}
+
+<div class="card">
+  <input type="text" class="form-control" data-quick-search="#logs-table" placeholder="Quick search..." style="margin-bottom:1rem;max-width:300px;">
+  <div class="table-scroll">
+  <table class="data-table" id="logs-table">
+    <thead><tr><th>Timestamp</th><th>Username</th><th>Action</th><th>Details</th></tr></thead>
+    <tbody>
+      {% for log in logs %}
+      <tr>
+        <td>{{ log.timestamp }}</td>
+        <td>{{ log.username }}</td>
+        <td><span class="badge badge-muted">{{ log.action }}</span></td>
+        <td>{{ log.details }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="empty-state">No activity logged yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}

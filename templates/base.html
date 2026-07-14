@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}RoomSync{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="app-shell">
+    {% if current_username %}
+    <aside class="sidebar">
+      <div class="brand">🗓️ RoomSync</div>
+      <nav>
+        <a href="{{ url_for('roomsync.upload_page') }}" class="{{ 'active' if request.endpoint == 'roomsync.upload_page' }}">📤 Upload Dataset</a>
+        <a href="{{ url_for('roomsync.files_view') }}" class="{{ 'active' if request.endpoint == 'roomsync.files_view' }}">🗂️ My Files</a>
+        <a href="{{ url_for('roomsync.history_view') }}" class="{{ 'active' if request.endpoint == 'roomsync.history_view' }}">🕑 Upload History</a>
+        <a href="{{ url_for('roomsync.search_users') }}" class="{{ 'active' if request.endpoint == 'roomsync.search_users' }}">🔍 Search Users</a>
+        <a href="{{ url_for('roomsync.dashboard_view') }}" class="{{ 'active' if request.endpoint == 'roomsync.dashboard_view' }}">📊 Dashboard</a>
+        <a href="{{ url_for('roomsync.analytics_view') }}" class="{{ 'active' if request.endpoint == 'roomsync.analytics_view' }}">📈 Analytics</a>
+        <a href="{{ url_for('roomsync.logs_view') }}" class="{{ 'active' if request.endpoint == 'roomsync.logs_view' }}">📜 Activity Logs</a>
+        <a href="{{ url_for('roomsync.logout') }}">🚪 Logout ({{ current_username }})</a>
+      </nav>
+    </aside>
+    {% endif %}
+
+    <main class="main-content">
+      <div class="topbar">
+        <h1>{% block page_title %}RoomSync{% endblock %}</h1>
+        <button id="theme-toggle" class="btn-theme" type="button">🌙 Dark</button>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

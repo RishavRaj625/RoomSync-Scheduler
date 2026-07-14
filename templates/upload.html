@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Upload Dataset — RoomSync{% endblock %}
+{% block page_title %}Upload Dataset{% endblock %}
+{% block content %}
+
+<div class="card">
+  <h3 style="margin-top:0;">Upload a .txt dataset</h3>
+  <p style="color:var(--text-muted);">
+    File must contain a <code>ROOMS</code> section (RoomID,Capacity) and a
+    <code>MEETINGS</code> section (MeetingID,Employee,Department,Attendees,Time,Priority).
+    Only <strong>.txt</strong> files are accepted.
+  </p>
+  <form method="post" enctype="multipart/form-data">
+    <div class="upload-drop" style="margin-bottom:1rem;">
+      <input type="file" name="dataset" accept=".txt" required>
+      <div style="margin-top:0.5rem;font-size:0.85rem;">Max size 10 MB</div>
+    </div>
+    <button type="submit" class="btn btn-primary">⬆ Upload &amp; Validate</button>
+  </form>
+</div>
+
+{% if errors %}
+<div class="card">
+  <h4 style="color:var(--danger);margin-top:0;">Validation Errors ({{ errors|length }})</h4>
+  <p style="color:var(--text-muted);">These are dataset-wide problems that couldn't be
+    automatically resolved (e.g. no usable rooms or meetings at all). Fix these and
+    re-upload.</p>
+  <ul>
+    {% for err in errors %}
+      <li>{{ err }}</li>
+    {% endfor %}
+  </ul>
+  {% if warnings %}
+  <h4 style="color:var(--warning);">Row-level Issues Found ({{ warnings|length }})</h4>
+  <ul>
+    {% for w in warnings %}
+      <li>{{ w.message }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  {% if preview %}
+  <h5>File preview</h5>
+  <pre class="code-preview">{{ preview }}</pre>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+  <h4 style="margin-top:0;">Sample format</h4>
+  <pre class="code-preview">ROOMS
+R101,20
+R102,10
+R103,50
+
+MEETINGS
+M001,John Doe,HR,15,09:00-10:00,High
+M002,Jane Smith,Finance,8,09:00-10:00,Medium
+M003,Alex Lee,Engineering,45,10:00-11:00,Low</pre>
+</div>
+{% endblock %}

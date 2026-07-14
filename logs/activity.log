@@ -1,0 +1,17 @@
+[2026-07-10 01:30:23] Rishav :: New User Registered :: 
+[2026-07-10 01:31:51] Rishav :: Upload :: sample_dataset.txt
+[2026-07-10 01:31:59] Rishav :: Schedule Generated :: sample_dataset.txt (8 scheduled, 0 conflicts)
+[2026-07-10 01:33:00] Rishav :: Upload :: dataset_faulty.txt
+[2026-07-10 01:33:23] Rishav :: Schedule Generated :: dataset_faulty.txt (27 scheduled, 3 conflicts)
+[2026-07-10 01:33:54] Rishav :: Logout :: 
+[2026-07-10 01:33:58] Aditi :: New User Registered :: 
+[2026-07-10 01:35:24] rishav :: New User Registered :: 
+[2026-07-10 01:36:44] rishav :: Upload :: dataset.txt
+[2026-07-10 01:36:49] rishav :: Schedule Generated :: dataset.txt (34 scheduled, 1 conflicts)
+[2026-07-10 01:41:26] rishav :: Login :: 
+[2026-07-10 01:41:42] rishav :: Upload :: dataset.txt
+[2026-07-10 01:41:45] rishav :: Schedule Generated :: dataset.txt (34 scheduled, 1 conflicts)
+[2026-07-10 01:48:57] rishav :: Logout :: 
+[2026-07-10 01:49:23] Rishav :: Login :: 
+[2026-07-10 01:52:57] Rishav :: Schedule Generated :: dataset_faulty.txt (27 scheduled, 3 conflicts)
+[2026-07-10 01:53:27] Rishav :: Logout :: 

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Search Users — RoomSync{% endblock %}
+{% block page_title %}Search Previous Users{% endblock %}
+{% block content %}
+
+<div class="card">
+  <form method="post" class="filter-bar">
+    <input type="text" name="username" class="form-control" placeholder="Enter a username" value="{{ searched_name }}" required>
+    <button type="submit" class="btn btn-primary">Search</button>
+  </form>
+</div>
+
+{% if results is not none %}
+<div class="card">
+  <h4 style="margin-top:0;">Results for "{{ searched_name }}"</h4>
+  {% if results %}
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr><th>File</th><th>Version</th><th>Upload Date</th><th>Status</th><th>Schedule</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for u in results %}
+      <tr>
+        <td>{{ u.original_filename }}</td>
+        <td>v{{ u.version }}</td>
+        <td>{{ u.upload_date }} {{ u.upload_time }}</td>
+        <td>{{ u.processing_status }}</td>
+        <td>{{ u.schedule_status }}</td>
+        <td>
+          {% if u.processing_status == 'Success' %}
+            <a class="btn btn-sm" href="{{ url_for('roomsync.preview_upload', upload_id=u.id) }}">View</a>
+            <a class="btn btn-sm" href="{{ url_for('roomsync.download_original', upload_id=u.id) }}">Download</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+    <p class="empty-state">No user found with that name.</p>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

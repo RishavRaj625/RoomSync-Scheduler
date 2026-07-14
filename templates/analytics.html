@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+{% block title %}Analytics — RoomSync{% endblock %}
+{% block page_title %}Analytics{% endblock %}
+{% block content %}
+
+<div class="stat-grid">
+  <div class="stat-card"><div class="stat-label">Meeting Success Rate</div><div class="stat-value" style="color:var(--success);">{{ data.meeting_success_rate }}%</div></div>
+  <div class="stat-card"><div class="stat-label">Conflict Rate</div><div class="stat-value" style="color:var(--danger);">{{ data.meeting_conflict_rate }}%</div></div>
+  <div class="stat-card"><div class="stat-label">Meetings Analyzed</div><div class="stat-value">{{ data.total_meetings_analyzed }}</div></div>
+</div>
+
+<div class="chart-grid">
+
+  <div class="card">
+    <h4 style="margin-top:0;">Meeting Status</h4>
+    <div class="chart-wrap chart-wrap-small"><canvas id="chart-meeting-status"></canvas></div>
+  </div>
+
+  <div class="card">
+    <h4 style="margin-top:0;">Meetings Assigned per Room</h4>
+    <div class="chart-wrap"><canvas id="chart-room-meetings"></canvas></div>
+  </div>
+
+  <div class="card">
+    <h4 style="margin-top:0;">Room Utilization (avg. % of capacity filled)</h4>
+    <div class="chart-wrap"><canvas id="chart-room-utilization"></canvas></div>
+  </div>
+
+  <div class="card">
+    <h4 style="margin-top:0;">Department-wise Meeting Count</h4>
+    <div class="chart-wrap"><canvas id="chart-department"></canvas></div>
+  </div>
+
+</div>
+
+<div class="card">
+  <h4 style="margin-top:0;">Room Occupancy by Time Slot</h4>
+  <p style="color:var(--text-muted);margin-top:-0.5rem;">
+    Darker cells mean more scheduled meetings overlapped that room during that hour.
+  </p>
+  <div id="occupancy-heatmap" class="table-scroll"></div>
+</div>
+
+<div class="card">
+  <h4 style="margin-top:0;">Peak Meeting Hours</h4>
+  <div class="chart-wrap"><canvas id="chart-peak-hours"></canvas></div>
+</div>
+
+<div class="card">
+  <h4 style="margin-top:0;">Conflict Statistics (by reason)</h4>
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th>Reason</th><th>Count</th></tr></thead>
+    <tbody>
+      {% for c in data.conflict_reasons %}
+      <tr><td>{{ c.reason }}</td><td>{{ c.count }}</td></tr>
+      {% else %}<tr><td colspan="2" class="empty-state">No conflicts recorded.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="card">
+  <h4 style="margin-top:0;">User Activity Statistics</h4>
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th>Username</th><th>Uploads</th></tr></thead>
+    <tbody>
+      {% for u in data.user_activity %}
+      <tr><td>{{ u.username }}</td><td>{{ u.uploads }}</td></tr>
+      {% else %}<tr><td colspan="2" class="empty-state">No data yet.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  const ANALYTICS_DATA = {{ data | tojson }};
+
+  const rootStyles = getComputedStyle(document.documentElement);
+  const cssVar = (name) => rootStyles.getPropertyValue(name).trim();
+  const colors = {
+    accent: cssVar('--accent') || '#4f6df5',
+    accentSoft: cssVar('--accent-soft') || '#e8ecfe',
+    success: cssVar('--success') || '#1b9e6b',
+    danger: cssVar('--danger') || '#e0483e',
+    warning: cssVar('--warning') || '#d69a1f',
+    text: cssVar('--text') || '#1b2430',
+    textMuted: cssVar('--text-muted') || '#667085',
+    border: cssVar('--border') || '#e2e6f0',
+  };
+
+  const palette = [colors.accent, colors.success, colors.warning, colors.danger,
+                   '#8e6fe0', '#2fb6c9', '#e07dbd', '#c9a13a', '#5aa0e0', '#7a8ba0'];
+
+  const createChart = (elementId, config) => {
+    const canvas = document.getElementById(elementId);
+    if (!canvas) {
+      console.warn(`Chart canvas not found: ${elementId}`);
+      return null;
+    }
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      console.warn(`Unable to get canvas context for: ${elementId}`);
+      return null;
+    }
+    try {
+      return new Chart(ctx, config);
+    } catch (error) {
+      console.error(`Failed to create chart ${elementId}:`, error);
+      return null;
+    }
+  };
+
+  const initCharts = () => {
+    if (typeof Chart === 'undefined') {
+      console.error('Chart.js is not loaded. Analytics charts cannot be rendered.');
+      return;
+    }
+
+    Chart.defaults.color = colors.textMuted;
+    Chart.defaults.borderColor = colors.border;
+    Chart.defaults.font.family = 'Segoe UI, Roboto, Helvetica, Arial, sans-serif';
+
+    const noDataPlugin = {
+      id: 'noData',
+      afterDraw(chart) {
+        const isEmpty = chart.data.datasets.every(ds => !ds.data || ds.data.length === 0 ||
+          ds.data.every(v => !v));
+        if (!isEmpty) return;
+        const { ctx, chartArea: { left, top, right, bottom } } = chart;
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = colors.textMuted;
+        ctx.font = '14px Segoe UI, sans-serif';
+        ctx.fillText('No data yet — upload and schedule a dataset to see this chart.',
+          (left + right) / 2, (top + bottom) / 2);
+        ctx.restore();
+      }
+    };
+
+    createChart('chart-meeting-status', {
+      type: 'doughnut',
+      data: {
+        labels: ANALYTICS_DATA.meeting_status_counts.map(d => d.status),
+        datasets: [{
+          data: ANALYTICS_DATA.meeting_status_counts.map(d => d.count),
+          backgroundColor: [colors.success, colors.danger],
+          borderColor: colors.border,
+          borderWidth: 2,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } },
+      },
+      plugins: [noDataPlugin],
+    });
+
+    createChart('chart-room-meetings', {
+      type: 'bar',
+      data: {
+        labels: ANALYTICS_DATA.room_utilization.map(d => d.room),
+        datasets: [{
+          label: 'Meetings Hosted',
+          data: ANALYTICS_DATA.room_utilization.map(d => d.meetings_hosted),
+          backgroundColor: colors.accent,
+          borderRadius: 4,
+          maxBarThickness: 42,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+      },
+      plugins: [noDataPlugin],
+    });
+
+    createChart('chart-room-utilization', {
+      type: 'bar',
+      data: {
+        labels: ANALYTICS_DATA.room_capacity_utilization.map(d => d.room),
+        datasets: [{
+          label: 'Avg. Capacity Filled (%)',
+          data: ANALYTICS_DATA.room_capacity_utilization.map(d => d.utilization_pct),
+          backgroundColor: colors.warning,
+          borderRadius: 4,
+          maxBarThickness: 42,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } },
+      },
+      plugins: [noDataPlugin],
+    });
+
+    createChart('chart-department', {
+      type: 'bar',
+      data: {
+        labels: ANALYTICS_DATA.department_distribution.map(d => d.department),
+        datasets: [{
+          label: 'Meetings',
+          data: ANALYTICS_DATA.department_distribution.map(d => d.meetings),
+          backgroundColor: ANALYTICS_DATA.department_distribution.map((_, i) => palette[i % palette.length]),
+          borderRadius: 4,
+          maxBarThickness: 42,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+      },
+      plugins: [noDataPlugin],
+    });
+
+    createChart('chart-peak-hours', {
+      type: 'line',
+      data: {
+        labels: ANALYTICS_DATA.peak_hours.map(d => d.hour),
+        datasets: [{
+          label: 'Meetings Starting',
+          data: ANALYTICS_DATA.peak_hours.map(d => d.meetings),
+          borderColor: colors.accent,
+          backgroundColor: colors.accentSoft,
+          fill: true,
+          tension: 0.3,
+          pointRadius: 3,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+      },
+      plugins: [noDataPlugin],
+    });
+  };
+
+  const renderHeatmap = () => {
+    const container = document.getElementById('occupancy-heatmap');
+    const heat = ANALYTICS_DATA.occupancy_heatmap;
+    if (!heat.rooms.length || !heat.hours.length) {
+      container.innerHTML = '<p class="empty-state">No scheduled meetings yet — ' +
+        'generate a schedule to see room occupancy by hour.</p>';
+      return;
+    }
+
+    const values = heat.matrix.reduce((acc, row) => acc.concat(row), []);
+    const maxVal = Math.max(1, ...values);
+    let html = '<table class="data-table heatmap-table"><thead><tr><th>Room</th>';
+    heat.hours.forEach(h => { html += `<th>${h}</th>`; });
+    html += '</tr></thead><tbody>';
+    heat.rooms.forEach((room, ri) => {
+      html += `<tr><td>${room}</td>`;
+      heat.matrix[ri].forEach(val => {
+        const intensity = val / maxVal;
+        const bg = intensity === 0
+          ? 'transparent'
+          : `rgba(79, 109, 245, ${0.12 + intensity * 0.68})`;
+        const fg = intensity > 0.55 ? '#fff' : 'inherit';
+        html += `<td style="background:${bg};color:${fg};text-align:center;font-weight:600;">${val || ''}</td>`;
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  };
+
+  const initializeAnalytics = () => {
+    initCharts();
+    renderHeatmap();
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeAnalytics);
+  } else {
+    initializeAnalytics();
+  }
+})();
+</script>
+{% endblock %}

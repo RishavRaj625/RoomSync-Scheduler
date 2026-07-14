@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Preview — {{ upload.original_filename }}{% endblock %}
+{% block page_title %}Preview Dataset{% endblock %}
+{% block content %}
+
+<div class="stat-grid">
+  <div class="stat-card"><div class="stat-label">File</div><div class="stat-value" style="font-size:1rem;">{{ upload.original_filename }}</div></div>
+  <div class="stat-card"><div class="stat-label">Version</div><div class="stat-value">v{{ upload.version }}</div></div>
+  <div class="stat-card"><div class="stat-label">Rooms Found</div><div class="stat-value">{{ upload.num_rooms }}</div></div>
+  <div class="stat-card"><div class="stat-label">Meetings Found</div><div class="stat-value">{{ upload.num_meetings }}</div></div>
+</div>
+
+{% if warnings %}
+<div class="card" style="border-left:4px solid var(--warning);">
+  <h4 style="margin-top:0;color:var(--warning);">⚠ Row-level Issues Auto-handled ({{ warnings|length }})</h4>
+  <p style="color:var(--text-muted);">
+    These rows couldn't be used exactly as provided. Anything with a safe default
+    (missing department, invalid priority, missing employee name) was repaired
+    automatically; everything else was skipped so the rest of the dataset could
+    still be processed normally.
+  </p>
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th>Line</th><th>Action</th><th>Details</th></tr></thead>
+    <tbody>
+      {% for w in warnings %}
+      <tr>
+        <td>{{ w.line if w.line else "—" }}</td>
+        <td>
+          {% if w.action == 'repaired' %}
+            <span class="badge badge-warning">Repaired</span>
+          {% elif w.action == 'skipped' %}
+            <span class="badge badge-muted">Skipped</span>
+          {% else %}
+            <span class="badge badge-info">Flagged</span>
+          {% endif %}
+        </td>
+        <td>{{ w.message }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <h4 style="margin-top:0;">File contents {% if truncated %}(first 40 lines shown){% endif %}</h4>
+  <pre class="code-preview">{{ preview }}</pre>
+</div>
+
+<div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+  <div>
+    <strong>Status:</strong>
+    <span class="badge badge-success">{{ upload.processing_status }}</span>
+  </div>
+  <form method="post" action="{{ url_for('roomsync.generate', upload_id=upload.id) }}">
+    <button type="submit" class="btn btn-primary">⚡ Generate Schedule</button>
+  </form>
+</div>
+{% endblock %}

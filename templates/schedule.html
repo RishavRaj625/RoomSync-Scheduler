@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Schedule — {{ upload.original_filename }}{% endblock %}
+{% block page_title %}Generated Schedule{% endblock %}
+{% block content %}
+
+<div class="stat-grid">
+  <div class="stat-card"><div class="stat-label">Total Meetings</div><div class="stat-value">{{ total_entries }}</div></div>
+  <div class="stat-card"><div class="stat-label">Scheduled</div><div class="stat-value" style="color:var(--success);">{{ upload.num_scheduled }}</div></div>
+  <div class="stat-card"><div class="stat-label">Conflicts</div><div class="stat-value" style="color:var(--danger);">{{ upload.num_conflicts }}</div></div>
+</div>
+
+<div class="card">
+  <form method="get" class="filter-bar">
+    <input type="text" class="form-control" name="q" placeholder="Search meeting, employee, room..." value="{{ query }}">
+    <select name="department" class="form-control">
+      <option value="">All Departments</option>
+      {% for d in departments %}
+        <option value="{{ d }}" {{ 'selected' if department == d }}>{{ d }}</option>
+      {% endfor %}
+    </select>
+    <select name="status" class="form-control">
+      <option value="">All Statuses</option>
+      <option value="Scheduled" {{ 'selected' if status == 'Scheduled' }}>Scheduled</option>
+      <option value="Conflict" {{ 'selected' if status == 'Conflict' }}>Conflict</option>
+    </select>
+    <button type="submit" class="btn">Filter</button>
+    <a href="{{ url_for('roomsync.schedule_view', upload_id=upload.id) }}" class="btn btn-sm">Reset</a>
+  </form>
+
+  <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
+    <a class="btn btn-sm btn-primary" href="{{ url_for('roomsync.download_schedule', upload_id=upload.id, fmt='csv') }}">⬇ Export CSV</a>
+    <a class="btn btn-sm btn-primary" href="{{ url_for('roomsync.download_schedule', upload_id=upload.id, fmt='txt') }}">⬇ Export TXT</a>
+    <a class="btn btn-sm" href="{{ url_for('roomsync.download_original', upload_id=upload.id) }}">⬇ Original File</a>
+  </div>
+
+  {% macro sort_link(field, label) -%}
+    <a href="{{ url_for('roomsync.schedule_view', upload_id=upload.id, q=query, department=department, status=status, sort_by=field, dir='desc' if sort_by==field and not descending else 'asc') }}">
+      {{ label }}{% if sort_by == field %}{{ ' ▼' if descending else ' ▲' }}{% endif %}
+    </a>
+  {%- endmacro %}
+
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>{{ sort_link('meeting_id', 'Meeting ID') }}</th>
+        <th>{{ sort_link('employee_name', 'Employee') }}</th>
+        <th>{{ sort_link('department', 'Department') }}</th>
+        <th>{{ sort_link('assigned_room', 'Room') }}</th>
+        <th>{{ sort_link('room_capacity', 'Capacity') }}</th>
+        <th>{{ sort_link('duration_minutes', 'Duration (min)') }}</th>
+        <th>{{ sort_link('time_slot', 'Time Slot') }}</th>
+        <th>{{ sort_link('priority', 'Priority') }}</th>
+        <th>{{ sort_link('status', 'Allocation Status') }}</th>
+        <th>Conflict Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in entries %}
+      <tr>
+        <td>{{ e.meeting_id }}</td>
+        <td>{{ e.employee_name }}</td>
+        <td>{{ e.department }}</td>
+        <td>{{ e.assigned_room or '—' }}</td>
+        <td>{{ e.room_capacity or '—' }}</td>
+        <td>{{ e.duration_minutes or '—' }}</td>
+        <td>{{ e.time_slot }}</td>
+        <td>{{ e.priority }}</td>
+        <td>
+          {% if e.status == 'Scheduled' %}
+            <span class="badge badge-success">Scheduled</span>
+          {% else %}
+            <span class="badge badge-danger">Conflict</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if e.conflict_reason %}
+            <span class="badge badge-warning" title="{{ e.conflict_reason }}">{{ e.conflict_reason }}</span>
+          {% else %}
+            <span class="badge badge-muted">None</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="10" class="empty-state">No meetings match your filters.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}

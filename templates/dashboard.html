@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — RoomSync{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+
+<div class="stat-grid">
+  <div class="stat-card"><div class="stat-label">Total Users</div><div class="stat-value">{{ stats.total_users }}</div></div>
+  <div class="stat-card"><div class="stat-label">New Users</div><div class="stat-value">{{ stats.new_users }}</div></div>
+  <div class="stat-card"><div class="stat-label">Returning Users</div><div class="stat-value">{{ stats.returning_users }}</div></div>
+  <div class="stat-card"><div class="stat-label">Total Uploaded Files</div><div class="stat-value">{{ stats.total_uploaded_files }}</div></div>
+  <div class="stat-card"><div class="stat-label">Total Schedules Generated</div><div class="stat-value">{{ stats.total_schedules_generated }}</div></div>
+  <div class="stat-card"><div class="stat-label">Successful Allocations</div><div class="stat-value" style="color:var(--success);">{{ stats.successful_allocations }}</div></div>
+  <div class="stat-card"><div class="stat-label">Failed Allocations</div><div class="stat-value" style="color:var(--danger);">{{ stats.failed_allocations }}</div></div>
+  <div class="stat-card"><div class="stat-label">Scheduling Conflicts</div><div class="stat-value" style="color:var(--warning);">{{ stats.scheduling_conflicts_detected }}</div></div>
+  <div class="stat-card"><div class="stat-label">Avg Processing Time</div><div class="stat-value">{{ stats.average_processing_time_ms }} ms</div></div>
+  <div class="stat-card"><div class="stat-label">Most Active User</div><div class="stat-value" style="font-size:1.1rem;">{{ stats.most_active_user }}</div></div>
+  <div class="stat-card"><div class="stat-label">Most Used Room</div><div class="stat-value" style="font-size:1.1rem;">{{ stats.most_used_meeting_room }}</div></div>
+  <div class="stat-card"><div class="stat-label">Total Departments</div><div class="stat-value">{{ stats.total_departments }}</div></div>
+  <div class="stat-card"><div class="stat-label">Total Meetings Scheduled</div><div class="stat-value">{{ stats.total_meetings_scheduled }}</div></div>
+</div>
+
+<div class="card">
+  <h4 style="margin-top:0;">All Users</h4>
+  {% if stats.user_names %}
+    <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
+      {% for name in stats.user_names %}
+        <span class="badge badge-muted">{{ name }}</span>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="empty-state">No users yet.</p>
+  {% endif %}
+</div>
+<p><a href="{{ url_for('roomsync.analytics_view') }}">View detailed analytics →</a></p>
+{% endblock %}

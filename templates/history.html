@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Upload History — RoomSync{% endblock %}
+{% block page_title %}Upload History{% endblock %}
+{% block content %}
+
+<div class="card">
+  <form method="get" class="filter-bar">
+    <input type="text" name="q" class="form-control" placeholder="Search filename, status, user..." value="{{ query }}">
+    <select name="scope" class="form-control" onchange="this.form.submit()">
+      <option value="mine" {{ 'selected' if scope == 'mine' }}>My Uploads</option>
+      <option value="all" {{ 'selected' if scope == 'all' }}>All Users</option>
+    </select>
+    <button type="submit" class="btn">Search</button>
+  </form>
+
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Username</th><th>Original File</th><th>Version</th><th>Upload Date</th>
+        <th>Upload Time</th><th>File Size</th><th>Records</th>
+        <th>Processing Status</th><th>Warnings</th><th>Schedule Status</th><th>Processing Time</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in uploads %}
+      <tr>
+        <td>{{ u.username if scope == 'all' else current_username }}</td>
+        <td>{{ u.original_filename }}</td>
+        <td>v{{ u.version }}</td>
+        <td>{{ u.upload_date }}</td>
+        <td>{{ u.upload_time }}</td>
+        <td>{{ u.file_size|filesize }}</td>
+        <td>{{ u.num_records }}</td>
+        <td>
+          {% if u.processing_status == 'Success' %}
+            <span class="badge badge-success">Success</span>
+          {% elif u.processing_status == 'Failed' %}
+            <span class="badge badge-danger">Failed</span>
+          {% else %}
+            <span class="badge badge-muted">{{ u.processing_status }}</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if u.num_warnings %}
+            <span class="badge badge-warning">{{ u.num_warnings }} auto-handled</span>
+          {% else %}
+            <span class="badge badge-muted">0</span>
+          {% endif %}
+        </td>
+        <td><span class="badge badge-muted">{{ u.schedule_status }}</span></td>
+        <td>{{ '%.1f'|format(u.processing_time_ms) }} ms</td>
+        <td>
+          {% if u.processing_status == 'Success' %}
+            <a class="btn btn-sm" href="{{ url_for('roomsync.preview_upload', upload_id=u.id) }}">View</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="12" class="empty-state">No uploads found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="card">
+  <h4 style="margin-top:0;">Version Groups</h4>
+  {% for group_key, versions in grouped.items() %}
+    <div style="margin-bottom:1rem;">
+      <strong>{{ versions[0].original_filename }}</strong> — {{ versions|length }} version(s)
+      <ul>
+        {% for v in versions %}
+          <li>v{{ v.version }} — {{ v.upload_date }} {{ v.upload_time }} —
+            {% if v.processing_status == 'Success' %}
+              <a href="{{ url_for('roomsync.preview_upload', upload_id=v.id) }}">View</a>
+            {% else %}
+              Failed
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% else %}
+    <p class="empty-state">No version history yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}
