@@ -1,4 +1,4 @@
-# RoomSync — Smart Meeting Room Allocation & Scheduling System
+# RoomSync: Smart Meeting Room Allocation & Scheduling System
 
 RoomSync is a full-stack, multi-user Flask web app that takes a plain
 `.txt` dataset of rooms and meetings, auto-assigns every meeting to the
